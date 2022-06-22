@@ -1,0 +1,135 @@
+Pré-requisitos:
+- Linguagens:
+	- Python 3.4+ (os códigos serão programados em Python)
+	- Java 8+ (o framework Hadoop é implementado em Java)
+	- Scala (o framework Spark é implementado em Scala)
+
+	- Hadoop 3.3+ (PySpark roda usando o Hadoop)
+	- Hive 3.2+ (PySpark faz comunicação com banco de dados Hive)
+	- Jupyter Notebook (Usaremos o Jupyter Notebook para escrever e rodar os códigos)
+
+1- Verificar e instalar os pré-requisitos:
+	1.1- Python:
+		$ python3 --version
+
+	1.2- Java:
+		$ java -version
+		$ sudo apt install openjdk-8-jdk-headless
+
+	1.3- Scala:
+		$ scala -version
+		$ sudo apt-get install scala
+
+	1.4- Hadoop:
+		$ hadoop version
+
+	1.5- Hive (opcional):
+		$ hive --version
+
+	1.6- Instalar outros pacotes necessários:
+		- pip3 para instalar bibliotecas Python:
+			$ sudo apt install python3-pip
+
+		- Instalar py4j para integração Python->Java:
+			$ pip3 install py4j
+
+	1.7- Jupyter:
+		$ pip3 install jupyter
+
+2- Baixar o binário e instalar o Spark
+	2.1- Download do binário:
+		Site: https://spark.apache.org/downloads.html
+		$ wget https://dlcdn.apache.org/spark/spark-3.2.1/spark-3.2.1-bin-hadoop3.2.tgz
+
+	- Extrair o tar para instalar
+		$ tar -xvzf spark-3.2.1-bin-hadoop3.2.tgz
+
+	- Renomear a pasta:
+		$ mv spark-3.2.1-bin-hadoop3.2 spark
+
+3- Setar o arquivo .bashrc ou .bash_aliases:
+	$ cd
+	$ nano .bash_aliases
+	'
+	export SPARK_HOME=$HOME/spark
+	export PYTHONPATH=$SPARK_HOME/python:$PYTHONPATH
+	export PYSPARK_DRIVER_PYTHON="jupyter"
+	export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
+	export PYSPARK_PYTHON=python3
+	export PATH=$PATH:$SPARK_HOME/bin:~/.local/bin
+	'
+
+	$ source .bash_aliases
+
+4- Testar o PySpark:
+	$ pyspark
+
+5- Criando um diretório para salvar os projetos Jupyter e inicializando nele
+	$ cd
+	$ mkdir jupyter_projects
+	$ cd jupyter_projects
+	$ jupyter notebook
+
+
+Extra:
+
+Podemos incorporar o PySpark em qualquer IDE, não só o Jupyter, utilizando o Spark Context:
+$ pip3 install findspark
+
+Dentro da IDE:
+import findspark
+findspark.init()
+
+import pyspark
+
+sc = pyspark.SparkContext(appName="app")
+
+Codigo aqui
+
+sc.stop()
+
+
+- Warning:
+WARN util.Utils: Your hostname, silas-VirtualBox resolves to a loopback address: 127.0.1.1; using 192.168.0.48 instead (on interface enp0s3)
+WARN util.Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+
+$ cd $SPARK_HOME/conf
+$ cp spark-env.sh.template spark-env.sh
+$ nano spark-env.sh
+'
+SPARK_LOCAL_IP="192.168.0.48"
+'
+
+
+WARN util.Utils: conf.HiveConf: HiveConf of name hive.metastore... does not exist
+
+A partir do Hadoop 3.0+ mudou a conexão entre o Spark e o Hive e é preciso configurar a comunicação através da nova interface Hive Warehouse Connector
+Guia: https://community.cloudera.com/t5/Community-Articles/Integrating-Apache-Hive-with-Apache-Spark-Hive-Warehouse/ta-p/249035
+
+- Modificar nas confs do Hive:
+$ cd $HIVE_HOME/conf
+$ nano hive-site.xml
+'
+<property>
+<name>hive.llap.execution.mode</name>
+<value>auto</value>
+</property>
+'
+
+Default value: none
+Possible values:
+	- none: not tried
+	- map: only map operators are considered for llap
+	- all: every operator is tried; but falls back to no-llap in case of problems
+	- only: same as "all" but stops with an exception if execution is not possible (as of 2.2.0 with HIVE-15135)
+	- auto: conversion is controlled by hive
+
+
+
+- Modificar nas confs do Spark:
+$ cd $SPARK_HOME/conf
+$ cp spark-defaults.conf.template spark-defaults.conf
+$ nano spark-defaults.conf
+'
+
+'

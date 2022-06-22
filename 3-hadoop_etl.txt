@@ -1,0 +1,55 @@
+# Análise utilizando funções mapper e reducer no HDFS:
+
+- Dados:
+https://openflights.org/data.html
+
+1- Explorando o HDFS
+	- Copiando o arquivo local para o HDFS
+		$ hdfs dfs -put /media/sf_Share_Folder/airports.dat /
+
+	- Copiar do HDFS para a pasta local:
+		$ hdfs dfs -get /diretorio_hdfs/arquivo
+
+	- Verificar o conteúdo do HDFS
+		$ hdfs dfs -ls /
+		$ hdfs dfs -ls -h /
+
+	- Verificando head do arquivo
+		$ hdfs dfs -cat /airports.dat
+		$ hdfs dfs -head /airports.dat
+
+	- Mesmos comandos usuais podem ser usados em hdfs:
+		$ hdfs dfs -help 								# Arquivo de ajuda
+		$ hdfs dfs -mkdir /folder 						# Cria diretório
+		$ hdfs dfs -cp /file_origin /file_destination 	# Copia um arquivo
+		$ hdfs dfs -touchz /empty_file 					# Cria um arquivo vazio
+		$ hdfs dfs -rm /file 							# Apaga arquivo
+		$ hdfs dfs -rm -R /folder 						# Apaga um diretório
+
+
+2- Análises:
+A- Os 2 aeroportos mais distantes um do outro
+B- País com maior quantidade de aeroportos
+C- Aeroporto com mais voos em 2017
+D- Distância entre os aeroportos Jorge Newbery Airpark e Guarulhos
+E- Aeroportos em São Paulo
+F- Aeroportos no Brasil
+G- Cidade com mais aeroportos
+H- Aeroporto com maior altitude
+
+Resumindo:
+- Número de aeroportos por cidade ou país
+- Variável de um aeroporto
+- Distância entre dois aeroportos
+
+
+3- Analisando número de aeroportos em uma cidade/país
+	- É necessário criar os arquivos mapper.py e reducer.py realizando a análise que preciso.
+		$ cp /media/sf_Shared_Folder/mapper.py ~/
+		$ cp /media/sf_Shared_Folder/reducer.py ~/
+	- Copiar o arquivo de entrada (análise para a pasta apropriada)
+		$ hdfs dfs -mkdir /input
+		$ hdfs dfs -mv /airports.dat /input/
+
+4- Rodar o mapreducer streaming com os argumentos de -input, -output, -mapper, -reducer
+	$ mapred streaming -input /data -output /out -mapper ~/mapper.py -reducer ~/reducer.py

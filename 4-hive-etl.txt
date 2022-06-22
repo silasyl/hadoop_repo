@@ -1,0 +1,148 @@
+# Comandos Hive:
+
+1- Donwload do binário Hive e instalar:
+	- Site: https://hive.apache.org/
+			https://dlcdn.apache.org/hive/
+		$ wget https://dlcdn.apache.org/hive/hive-3.1.3/apache-hive-3.1.3-bin.tar.gz
+	- Extrair o tar para instalar
+		$ tar -xvf apache-hive-3.1.3-bin.tar.gz
+
+2- Configurar o ambiente para o Hive:
+	- Adicionar Hive Home ao arquivo .bash_aliases:
+		$ nano .bash_aliases
+		'
+		export HIVE_HOME=$HOME/apache-hive-3.1.3-bin
+		export PATH=$PATH:$HIVE_HOME/bin
+		'
+
+	- Adicionar Hadoop Home ao hive-config.sh:
+		$ cd apache-hive-3.1.3-bin/bin
+		$ nano hive-config.sh
+		'
+		export HADOOP_HOME=$HOME/hadoop-3.3.3
+		'
+
+	- Criar o arquivo hive-site.xml do template:
+		$ cd $HIVE_HOME/conf
+		$ ls
+		$ cp hive-default-xml-template hive-site.xml
+	- Na linha 3215, ha um erro no comentario que invalida o codigo. Apagar '&#8;'.
+		$ nano hive-site.xml
+		$ Ctrl + Shift + '-' entra na busca por linha: 3215
+	- Também adicionar:
+		'
+		<property>
+		<name>system:java.io.tmpdir</name>
+		<value>/tmp/hive/java</value>
+		</property>
+		<property>
+		<name>system:user.name</name>
+		<value>${user.name}</value>
+		</property>
+		'
+	- E modificar:
+		- metastore deve ser o diretório na pasta local, onde ficará armazenado os metadados:
+			'
+			<property>
+			<name>javax.jdo.option.ConnectionURL</name>
+			<value>jdbc:derby:;databaseName=metastore/metastore_db;create=true</value>
+			'
+		- warehouse deve ser o diretório HDFS onde ficará armazenado os dados:
+			'<property>
+			<name>hive.metastore.warehouse.dir</name>
+			<value>/user/hive/warehouse</value>
+			'
+
+	- Criar o diretório configurado e dar acesso necessário, para armazenar os dados do hive:
+		$ cd $HIVE_HOME/conf
+		$ mkdir metastore
+		$ chmod g+w ./metastore
+
+	- Recarregar o ambiente:
+		$ source .bash_aliases
+
+3- Criar os diretórios Hive dentro do HDFS:
+	- Criar um diretório /user/hive/warehouse dentro do HDFS para armazenar as tabelas do Hive:
+		$ hdfs dfs -mkdir -p /user/hive/warehouse
+
+	- Dar permissão de escrita e execução:
+		$ hdfs dfs -chmod g+w /user/hive/warehouse
+
+	- Checar a permissão:
+		$ hdfs dfs -ls /user/hive
+
+4- Instalar o Derby Database, necessário para armazenar os metadados do Hive:
+	É necessário configurar o metastore do Hive, que armazena a estrutura dos dados. Para produção pode-se usar MySQL ou Postgres.
+	Para teste e aprendizado, por ser mais simples, vamos usar o padrão, Derby.
+	4.1- Baixar o binário Derby
+	Site: https://db.apache.org/derby/
+		$ wget https://archive.apache.org/dist/db/derby/db-derby-10.14.2.0/db-derby-10.14.2.0-bin.tar.gz
+	
+	4.2- Extrair o tar para instalar
+		$ tar -xvf db-derby-10.14.2.0-bin.tar.gz
+
+	4.3- Criar uma pasta para o Derby armazenar os metadados:
+		$ mkdir $DERBY_HOME/data
+
+	4.4- Adicionar Derby Home ao arquivo .bash_aliases:
+		$ nano .bash_aliases
+		'
+		export DERBY_HOME=$HOME/db-derby-10.14.2.0-bin
+		export PATH=$PATH:$DERBY_HOME/bin
+		'
+
+	4.5- Recarregar o ambiente:
+		$ source .bash_aliases
+
+	4.6- Iniciar o Derby:
+		$ $HIVE_HOME/bin/schematool -dbType derby -initSchema
+
+	4.7- No caso de dar erro de compatibilidade jar:
+		- Checar as versões do guava jar nos diretórios do HIVE e HADOOP:
+		$ ls $HIVE_HOME/lib
+		$ ls $HADOOP_HOME/share/hadoop/hdfs/lib
+
+		- No caso de serem diferentes, apagar do HIVE e copiar do HADOOP para o HIVE:
+		$ rm $HIVE_HOME/lib/guava-19.0.jar
+		$ cp $HADOOP_HOME/share/hadoop/hdfs/lib/guava-27.0-jre.jar $HIVE_HOME/lib/
+
+		- Apagar o diretório /HIVE_HOME/conf/metastode_db pois possui database corrompido e reconstruir:
+		$ cd $HIVE_HOME/conf
+		$ rm -rf metastore_db
+		$ $HIVE_HOME/bin/schematool -dbType derby -initSchema
+
+5- Testar a versão / instalação:
+	$ hive --version
+
+6- Abrir o Hive Client Shell:
+	$ hive
+
+7- Programando em ambiente Hive:
+	hive> SHOW DATABASES;
+		> CREATE DATABASE aero_db;
+		> USE aero_db;
+		> SHOW TABLES;
+		> CREATE EXTERNAL TABLE aero_tb
+			(Airport_ID INT,
+			 Name STRING,
+			 City STRING,
+			 Country STRING,
+			 IATA STRING,
+			 ICAO STRING,
+			 Latitude FLOAT,
+			 Longitude FLOAT,
+			 Altitude FLOAT,
+			 Timezone FLOAT,
+			 DST STRING,
+			 Tz_db_tz STRING,
+			 Type STRING,
+			 Source STRING)
+			 ROW FORMAT DELIMITED
+			 FIELDS TERMINATED BY ',';
+		> LOAD DATA INPATH '/airports.dat' OVERWRITE INTO TABLE aero_tb;
+		> DESCRIBE aero_tb;
+		> DESCRIBE FORMATTED aero_tb;
+		> SELECT * FROM aero_tb LIMIT 5;
+		> SELECT COUNT(*) FROM aero_tb;
+		> SELECT COUNT(*) FROM aero_tb WHERE country = '"Brazil"';
+		> SELECT country,count(1) AS total FROM aero_tb GROUP BY country ORDER BY total DESC;

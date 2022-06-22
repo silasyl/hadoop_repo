@@ -1,0 +1,182 @@
+1- Instalar o Java:
+	- Pode ser a versão 8 ou superior, mas para compatibilidade, precisamos só do básico, vou instalar o 8.
+	- Checar se tem java instalado:
+		$ java -version
+		$ sudo apt install openjdk-8-jdk-headless
+	- Testar a pasta em que o Java foi instalado:
+		$ cd /usr/lib/jvm/java-8-openjdk-amd64
+	- Setar variáveis de ambiente JAVA_HOME e JRE_HOME no /etc/environment:
+		$ sudo nano /etc/environment
+		'
+		JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+		JRE_HOME="/usr/lib/jvm/java-8-openjdk-amd64/jre"
+		'
+	- Recarregar o ambiente e testar:
+		$ source /etc/environment
+		$ echo $JAVA_HOME
+		$ echo $JRE_HOME
+
+2- Donwload do binário Hadoop e instalar:
+	- Site: https://hadoop.apache.org/releases.html
+		$ wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.3/hadoop-3.3.3.tar.gz
+	- Extrair o tar para instalar
+		$ tar -xvf hadoop-3.3.3.tar.gz
+	- Adicionar os caminhos dos diretórios no arquivo bash (.bashrc) do usuário:
+		$ nano .bash_aliases
+		'
+		export HADOOP_HOME=$HOME/hadoop-3.3.3
+		export HADOOP_CONF_DIR=$HOME/hadoop-3.3.3/etc/hadoop
+		export HADOOP_MAPRED_HOME=$HOME/hadoop-3.3.3
+		export HADÒOP_COMMON_HOME=$HOME/hadoop-3.3.3
+		export HADOOP_HDFS_HOME=$HOME/hadoop-3.3.3
+		export YARN_HOME=$HOME/hadoop-3.3.3
+		export PATH=$PATH:$HOME/hadoop-3.3.3/bin
+		export PATH=$PATH:$HOME/hadoop-3.3.3/sbin
+
+		export JAVA_HOME=/usr/lib/vjm/java-8-openjdk-amd64
+		export PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH
+		'
+
+	- Recarregar o ambiente e testar a versão do Hadoop:
+		$ source .bash_aliases
+		$ hadoop version
+
+3- Configurações do Hadoop:
+	$ cd hadoop-3.3.3/etc/hadoop
+	$ ls
+
+	3.1- core-site.xml: configs de localização do NameNode e I/O
+		$ nano core-site.xml
+		'
+		<configuration>
+		<property>
+		<name>fs.default.name</name>
+		<value>hdfs://localhost:9000</value>
+		</property>
+		</configuration>
+		'
+
+	3.2- hdfs-site.xml: configs dos daemons HDFS (NameNode, DataNode, Secondary NameNode) e fator de replicação do HDFS
+		Prestar atenção e mudar os diretórios de dfs.name.dir e dfs.data.dir, de acordo com seu nome de usuário e diretório
+		onde deseja manter salvo o HDFS.
+		No meu caso: <USER> é 'silas' e <DIR_NAME> é 'hadoop-3.3.3/hadoop_data'
+
+		$ nano hdfs-site.xml
+		'
+		<configuration>
+		<property>
+		<name>dfs.replication</name>
+		<value>1</value>
+		</property>
+		<property>
+		<name>dfs.permission</name>
+		<value>false</value>
+		</property>
+		<property>
+		<name>dfs.name.dir</name>
+		<value>file:///home/<USER>/<DIR_NAME>/name</value>
+		</property>
+		<property>
+		<name>dfs.data.dir</name>
+		<value>file:///home/<USER>/<DIR_NAME>/data</value>
+		</property>
+		</configuration>
+		'
+
+	3.3- mapred-site.xml: configs de MapReduce, número de JVMs em paralelo, tamanho dos processos mapper e reducer
+		Se mapred-site.xml não estiver disponível, criar uma cópia do template:
+		$ cp mapred-site.xml.template mapred-site.xml
+
+		Editar:
+		$ nano mapred-site.xml
+		'
+		<configuration>
+		<property>
+		<name>mapreduce.framework.name</name>
+		<value>yarn</value>
+		</property>
+		
+		<property>
+		<name>yarn.app.mapreduce.am.env</name>
+		<value>HADOOP_MAPRED_HOME=$HADOOP_HOME</value>
+		</property>
+		<property>
+		<name>mapreduce.map.env</name>
+		<value>HADOOP_MAPRED_HOME=$HADOOP_HOME</value>
+		</property>
+		<property>
+		<name>mapreduce.reduce.env</name>
+		<value>HADOOP_MAPRED_HOME=$HADOOP_HOME</value>
+		</property>
+		</configuration>
+		'
+
+	3.4- yarn-site.xml: configs de ResourceManager e NodeManager (uso de memória, programas, etc)
+		$ nano yarn-site.xml
+		'
+		<configuration>
+		<property>
+		<name>yarn.nodemanager.aux-services</name>
+		<value>mapreduce_shuffle</value>
+		</property>
+		<property>
+		<name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
+		<value>org.apache.hadoop.mapred.ShuffleHandler</value>
+		</property>
+		</configuration>
+		'
+	3.5- hadoop-env.sh: configs de variáveis de ambiente nos scripts Hadoop
+		$ nano hadoop-env.sh
+		'
+		export JAVA_HOME=/usr/lib/vjm/java-8-openjdk-amd64
+		'
+
+4- Voltar ao diretório raiz do Hadoop e formatar o NameNode (ATENCAO: apenas a 1a vez!!!)
+	cd
+	cd hadoop-3.3.3
+	bin/hadoop namenode -format
+
+5- Configurar conexão e acesso SSH entre VM e Hadoop:
+	- Desinstalar o SSH e reinstalá-lo:
+		$ sudo apt-get remove openssh-client openssh-server
+		$ sudo apt-get install openssh-client openssh-server
+	- Criar ssh key (se já tiver uma chave, usar outro nome):
+		$ ssh-keygen
+	- Ativar o ssh-agent
+		$ eval `ssh-agent`
+	- Adicionar o ssh gerado ao ssh-agent:
+		$ ssh-add $HOME/.ssh/id_rsa # (ou usar nome dado no lugar de id_rsa)
+	- Adicionar a chave pub às chaves autorizadas
+		$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+	- Reset para recarregar as chaves SSH
+		$ sudo service ssh restart
+	- Carregar o localhost com acesso SSH livre:
+		$ ssh localhost
+
+6- Ativar os nodos Hadoop
+	$ cd hadoop-3.3.3/sbin
+	- Um unico comando para inicializar todos
+		$ ./start-all.sh
+	- Inicializar individualmente
+		$ ./start-dfs.sh
+		$ ./start-yarn.sh
+		$ mapred --daemon start historyserver
+
+	- Para finalizar, é o análogo:
+		$ ./stop-all.sh
+
+		$ ./stop-dfs.sh
+		$ ./stop-yarn.sh
+		$ mapred --daemon stop historyserver
+
+7- Testar:
+	- Você pode acessar pelo VM: (ATENÇÃO, a porta para o Hadoop era 50070. Na versão 3.0 modificaram para 9870)
+		- http://localhost:9870
+	- Ou você pode acessar pelo host:
+		- http://192.168.0.48:9870
+
+	- YARN Namenode:
+		- http://localhost:8042
+
+	- YARN ResourceManager:
+		- http://localhost:8088

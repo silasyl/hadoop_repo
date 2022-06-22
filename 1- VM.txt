@@ -1,0 +1,58 @@
+Sigla Máquina Local: host
+Sigla Máquina Virtual: VM
+
+
+1- Instalação MáquinaVirtual
+Vamos utilizar o Oracle VirtualBox, por ser muito utilizado, mas pode ser outros.
+https://www.virtualbox.org/wiki/Downloads
+
+- P/ Windows: Ir no site, baixar e instalar o .exe
+https://pureinfotech.com/install-virtualbox-windows-10/
+
+- P/ Linux:
+$ sudo apt-get update
+$ sudo apt-get install virtualbox
+$ sudo apt-get install virtualbox-ext-pack
+
+
+2- Configurando a VM:
+	2.1- Criar um diretório onde ficarão armazenadas as VMs
+	2.2- Setar essa pasta no Oracle VB:
+		File > Preferences
+		General > Default Machine Folder
+
+
+3- Instalar um SO:
+	- Pode ser versão Lite ou tradicionais (Ubuntu ou CentOS)
+	- Para visualização e aprendizado, vou utilizar o Ubuntu usual
+	3.1- Ir no site do SO desejado, baixar o arquivo .iso
+		Ubuntu: https://ubuntu.com/download/desktop
+		Para versões mais leves pode usar Linux Mint, Lubuntu, Linux Lite
+	3.2- Configurar a máquina
+		Oracle VM:
+		New > Configurar
+
+		- Rede VirtualBox:
+			SO -> Settings
+			Network -> Bridged Adapter
+			OK
+
+		- Diretório compartilhado:
+			SO -> Settings
+			Shared Folders -> Add
+			Folder Path -> Selecionar a pasta no host
+			Selecionar: Auto-mount
+			OK
+	3.3- Instalar o SO
+		Start
+		Configurar
+
+4- Após instalação, configurações:
+	4.1- Atualizar o SO:
+		$ sudo apt-get update
+		$ sudo apt-get upgrade
+
+	4.2- Configurar a pasta compartilhada pela VM (permissão para acessar):
+		$ sudo apt-get install virtualbox-guest-utils
+		$ sudo adduser $USER vboxsf
+		$ sudo reboot
